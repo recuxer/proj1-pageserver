@@ -22,7 +22,7 @@ log = logging.getLogger(__name__)
 
 import socket    # Basic TCP/IP communication on the internet
 import _thread   # Response computation runs concurrently with main program
-
+import os 
 
 def listen(portnum):
     """
@@ -67,6 +67,9 @@ CAT = """
      ^ ^
    =(   )=
 """
+ARROW = """
+---------->
+"""
 
 # HTTP response codes, as the strings we will actually send.
 # See:  https://en.wikipedia.org/wiki/List_of_HTTP_status_codes
@@ -90,9 +93,24 @@ def respond(sock):
     log.info("Request was {}\n***\n".format(request))
 
     parts = request.split()
-    if len(parts) > 1 and parts[0] == "GET":
+    if len(parts) > 1:
+        extension = parts[1].split('.')   
+        givenPath = parts[1].split('/')
+    
+    
+    if parts[0] == "POST" or parts[0] == "PUT" or parts[0] == "UPDATE":
+        transmit(STATUS_NOT_IMPLEMENTED, sock)
+    elif "~" in parts[1] or "//" in parts[1] or ".." in parts[1]:
+        transmit(STATUS_FORBIDDEN, sock)
+    elif len(parts) > 1 and givenPath[1] == '':
         transmit(STATUS_OK, sock)
         transmit(CAT, sock)
+    elif len(extension) > 1:
+        if extension[1] == 'html' or extension[1] == 'css':
+            transmit(STATUS_OK, sock)
+            shoot(givenPath[1], sock)
+        else:
+            transmit(STATUS_FORBIDDEN, sock)
     else:
         log.info("Unhandled request: {}".format(request))
         transmit(STATUS_NOT_IMPLEMENTED, sock)
@@ -101,7 +119,6 @@ def respond(sock):
     sock.shutdown(socket.SHUT_RDWR)
     sock.close()
     return
-
 
 def transmit(msg, sock):
     """It might take several sends to get the whole message out"""
@@ -134,10 +151,25 @@ def get_options():
 
     return options
 
+def shoot(fileName, sock):
 
+    path = os.path.join(DOCROOT, fileName)
+    log.debug("path is: {}".format(path))
+    try:
+       with open(path, 'r', encoding='utf-8') as source:
+           for line in source:
+              line = (line.strip())
+              transmit(line, sock)
+    except OSError as error:
+       log.warn("failed to open file")
+       log.warn("requested file: {}".format(path))
+       log.warn("exception {}".format(error))
+       transmit(STATUS_NOT_FOUND, sock)
 def main():
     options = get_options()
     port = options.PORT
+    global DOCROOT
+    DOCROOT = options.DOCROOT
     if options.DEBUG:
         log.setLevel(logging.DEBUG)
     sock = listen(port)
