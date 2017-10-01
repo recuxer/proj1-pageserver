@@ -151,8 +151,7 @@ def get_options():
 
     return options
 
-def shoot(fileName, sock):
-
+def shoot(fileName, sock):   #function to output text using socket for transportation
     path = os.path.join(DOCROOT, fileName)
     log.debug("path is: {}".format(path))
     try:
@@ -165,6 +164,7 @@ def shoot(fileName, sock):
        log.warn("requested file: {}".format(path))
        log.warn("exception {}".format(error))
        transmit(STATUS_NOT_FOUND, sock)
+
 def main():
     options = get_options()
     port = options.PORT
