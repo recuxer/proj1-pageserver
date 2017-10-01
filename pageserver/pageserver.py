@@ -93,24 +93,24 @@ def respond(sock):
     log.info("Request was {}\n***\n".format(request))
 
     parts = request.split()
-    if len(parts) > 1:
-        extension = parts[1].split('.')   
-        givenPath = parts[1].split('/')
+    if len(parts) > 1:  #if there is a path
+        extension = parts[1].split('.')	 #split parts to find extension of path   
+        givenPath = parts[1].split('/')  #split path by / to get correct path name
     
     
-    if parts[0] == "POST" or parts[0] == "PUT" or parts[0] == "UPDATE":
+    if parts[0] == "POST" or parts[0] == "PUT" or parts[0] == "UPDATE":   #if anything other than GET request, relevant code
         transmit(STATUS_NOT_IMPLEMENTED, sock)
-    elif "~" in parts[1] or "//" in parts[1] or ".." in parts[1]:
+    elif "~" in parts[1] or "//" in parts[1] or ".." in parts[1]:   #forbidden strings in path
         transmit(STATUS_FORBIDDEN, sock)
-    elif len(parts) > 1 and givenPath[1] == '':
+    elif len(parts) > 1 and givenPath[1] == '':   #if path is empty, show original cat
         transmit(STATUS_OK, sock)
         transmit(CAT, sock)
-    elif len(extension) > 1:
+    elif len(extension) > 1:   #if the extension exists, determine and direct to file
         if extension[1] == 'html' or extension[1] == 'css':
             transmit(STATUS_OK, sock)
             shoot(givenPath[1], sock)
         else:
-            transmit(STATUS_FORBIDDEN, sock)
+            transmit(STATUS_FORBIDDEN, sock)   #if extension not permitted
     else:
         log.info("Unhandled request: {}".format(request))
         transmit(STATUS_NOT_IMPLEMENTED, sock)
